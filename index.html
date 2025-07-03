@@ -78,7 +78,7 @@
       }
     }
 
-    let seatStates = [];  // 유지되는 상태 저장용
+    let seatStates = [];
 
     function createCell(index, value) {
       const div = document.createElement("div");
@@ -128,39 +128,27 @@
 
       let allNumbers = [];
       for (let i = start; i <= end; i++) {
-        allNumbers.push(i);
-      }
-
-      let seatValues = [];
-
-      if (end - start + 1 <= 18) {
-        let emptyCount = 18 - allNumbers.length;
-        for (let i = 0; i < emptyCount; i++) {
+        if (exclude.includes(i)) {
           allNumbers.push("x");
+        } else {
+          allNumbers.push(i);
         }
-        shuffle(allNumbers);
-        seatValues = allNumbers.map(v => exclude.includes(v) ? "" : (v === "x" ? "" : v));
-      } else {
-        shuffle(allNumbers);
-        seatValues = allNumbers.map(v => exclude.includes(v) ? "" : v);
       }
+
+      shuffle(allNumbers);
+
+      const seatValues = allNumbers.map(v => v === "x" ? "" : v);  // 'x'는 나중에 빈칸 처리
 
       const totalSeats = seatValues.length;
 
-      // 기존 상태를 복원하거나 새로 생성
-      const oldStates = seatStates.slice(); // 이전 상태 복사
       seatStates = Array(totalSeats).fill(null);
-      for (let i = 0; i < totalSeats; i++) {
-        seatStates[i] = oldStates[i] === "X" ? "X" : null;
-      }
 
-      let columns = 2, rows = 3;
-      if (end - start + 1 > 18) {
-        const perSection = Math.ceil(seatValues.length / 3);
-        rows = Math.ceil(perSection / 2);
-      }
+      // 칸 배치 계산
+      let columns = 2;
+      let sections = 3;
+      let rows = Math.ceil(totalSeats / (columns * sections));
 
-      for (let s = 0; s < 3; s++) {
+      for (let s = 0; s < sections; s++) {
         const section = document.createElement("div");
         section.className = "section";
         section.style.gridTemplateColumns = `repeat(${columns}, 60px)`;
@@ -171,10 +159,11 @@
           const val = seatValues[globalIndex] ?? "";
           section.appendChild(createCell(globalIndex, val));
         }
+
         seatLayout.appendChild(section);
       }
 
-      const used = 3 * columns * rows;
+      const used = columns * rows * sections;
       const unplaced = seatValues.slice(used).filter(v => v !== "");
       if (unplaced.length > 0) {
         unplacedBox.style.display = "block";
