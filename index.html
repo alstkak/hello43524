@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <title>자리 뽑기 (X 임의 배치)</title>
+  <title>자리 뽑기 - 제외 번호 빈칸 처리 수정</title>
   <style>
     body { font-family: sans-serif; }
     .layout {
@@ -73,7 +73,7 @@
 
   <script>
     function shuffle(array) {
-      for (let i = array.length - 1; i > 0; i--) {
+      for(let i = array.length -1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [array[i], array[j]] = [array[j], array[i]];
       }
@@ -86,21 +86,19 @@
       div.className = "cell";
       div.dataset.seatIndex = index;
 
-      if (seatStates[index] === "X") {
-        // 기존에 클릭해서 표시한 X는 '×' 표시 유지
+      if(seatStates[index] === "X") {
         div.textContent = "×";
         div.classList.add("clicked");
       } else {
-        // 여기서 value가 'X'인 경우는 빈칸으로 표시
-        div.textContent = (value === "X" || value === "") ? "" : value;
-        if (value === "X") div.classList.remove("clicked");
+        div.textContent = value === "" ? "" : value;
+        div.classList.remove("clicked");
       }
 
       div.addEventListener("click", () => {
         const idx = parseInt(div.dataset.seatIndex);
-        if (seatStates[idx] === "X") {
+        if(seatStates[idx] === "X") {
           seatStates[idx] = null;
-          div.textContent = (value === "X" || value === "") ? "" : value;
+          div.textContent = seatValues[idx] === "" ? "" : seatValues[idx];
           div.classList.remove("clicked");
         } else {
           seatStates[idx] = "X";
@@ -112,6 +110,8 @@
       return div;
     }
 
+    let seatValues = [];
+
     function generateSeats() {
       const start = parseInt(document.getElementById("startNum").value);
       const end = parseInt(document.getElementById("endNum").value);
@@ -120,7 +120,7 @@
         .map(s => parseInt(s.trim()))
         .filter(n => !isNaN(n));
 
-      if (start >= end || start < 1 || end < 1) {
+      if(start >= end || start < 1 || end < 1) {
         alert("시작과 끝 번호를 정확히 입력해주세요.");
         return;
       }
@@ -131,77 +131,43 @@
       unplacedBox.style.display = "none";
       unplacedBox.innerHTML = "";
 
-      let allNumbers = [];
-      for (let i = start; i <= end; i++) {
-        allNumbers.push(i);
+      // 1. 처음 번호부터 끝 번호까지 전부 배열에 넣고 셔플
+      seatValues = [];
+      for(let i = start; i <= end; i++) {
+        seatValues.push(i);
       }
+      shuffle(seatValues);
 
-      // 기존 클릭해서 표시한 X 위치 저장
-      const existingXIndices = [];
-      for (let i = 0; i < seatStates.length; i++) {
-        if (seatStates[i] === "X") existingXIndices.push(i);
-      }
-
-      // 제외 번호 필터링
-      allNumbers = allNumbers.filter(n => !exclude.includes(n));
-
-      let seatValues = [];
-
-      const totalSeats = end - start + 1;
-      if (totalSeats <= 18) {
-        // 부족한 빈칸 개수
-        const emptyCount = 18 - totalSeats;
-
-        // 먼저 숫자만 섞음
-        shuffle(allNumbers);
-
-        // 임의로 빈칸 위치를 만들기 위해 배열에 'X'를 emptyCount 만큼 넣기
-        let combined = allNumbers.slice();
-        for (let i = 0; i < emptyCount; i++) {
-          combined.push("X");
+      // 2. 제외 번호에 해당하는 숫자는 빈칸으로 변경
+      for(let i = 0; i < seatValues.length; i++) {
+        if(exclude.includes(seatValues[i])) {
+          seatValues[i] = "";
         }
-        shuffle(combined);
-
-        seatValues = combined;
-      } else {
-        // 19 이상이면 그냥 숫자만 셔플하고 제외된 번호는 빈칸 처리
-        shuffle(allNumbers);
-
-        // 빈칸은 빈 문자열로 표시
-        seatValues = allNumbers.slice();
       }
 
-      // 기존에 '×' 표시가 있던 칸은 유지 (범위 내면)
-      existingXIndices.forEach(idx => {
-        if (idx < seatValues.length) {
-          seatValues[idx] = "X";
-          seatStates[idx] = "X";
-        }
-      });
-
-      // seatStates 배열 크기 맞추고 초기화 (X 아닌 건 null)
-      seatStates.length = seatValues.length;
-      for (let i = 0; i < seatStates.length; i++) {
-        if (seatStates[i] !== "X") seatStates[i] = null;
+      // 3. 기존 '×' 표시된 칸은 유지하도록 인덱스 저장
+      for(let i = 0; i < seatStates.length; i++) {
+        if(seatStates[i] !== "X") seatStates[i] = null;
       }
 
-      let columns = 2,
-        rows = 3,
-        sections = 3;
-
-      if (totalSeats > 18) {
-        const perSection = Math.ceil(seatValues.length / 3);
-        rows = Math.ceil(perSection / 2);
+      // 4. grid 설정
+      let totalSeats = seatValues.length;
+      let columns = 2;
+      let rows = 3;
+      if(totalSeats > 18) {
+        let perSection = Math.ceil(totalSeats / 3);
+        rows = Math.ceil(perSection / columns);
       }
 
-      for (let s = 0; s < 3; s++) {
+      // 5. 3분단 생성
+      for(let s = 0; s < 3; s++) {
         const section = document.createElement("div");
         section.className = "section";
         section.style.gridTemplateColumns = `repeat(${columns}, 60px)`;
         section.style.gridTemplateRows = `repeat(${rows}, 60px)`;
 
-        for (let row = 0; row < rows; row++) {
-          for (let col = 0; col < columns; col++) {
+        for(let row = 0; row < rows; row++) {
+          for(let col = 0; col < columns; col++) {
             const localIndex = row * columns + col;
             const globalIndex = s * columns * rows + localIndex;
             const val = seatValues[globalIndex] ?? "";
@@ -211,9 +177,10 @@
         seatLayout.appendChild(section);
       }
 
+      // 6. 남은 번호 출력 (남으면)
       const used = 3 * columns * rows;
-      const unplaced = seatValues.slice(used).filter(v => v !== "" && v !== "X");
-      if (unplaced.length > 0) {
+      const unplaced = seatValues.slice(used).filter(v => v !== "");
+      if(unplaced.length > 0) {
         unplacedBox.style.display = "block";
         unplacedBox.textContent = "배치되지 못한 번호: " + unplaced.join(", ");
       }
