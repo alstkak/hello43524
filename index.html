@@ -120,7 +120,13 @@
         return;
       }
 
-      const totalNumbers = end - start + 1;
+      const totalCount = end - start + 1;
+      const seatLayout = document.getElementById("seatLayout");
+      const unplacedBox = document.getElementById("unplaced");
+      seatLayout.innerHTML = "";
+      unplacedBox.style.display = "none";
+      unplacedBox.innerHTML = "";
+
       let allNumbers = [];
       for (let i = start; i <= end; i++) {
         if (exclude.includes(i)) {
@@ -130,58 +136,71 @@
         }
       }
 
-      if (totalNumbers <= 18) {
+      // 18칸 고정 배치 조건
+      if (totalCount <= 18) {
         while (allNumbers.length < 18) {
           allNumbers.push("x");
         }
         shuffle(allNumbers);
-      } else {
-        shuffle(allNumbers);
-      }
+        const seatValues = allNumbers.map(v => v === "x" ? "" : v);
 
-      const seatValues = allNumbers.map(v => v === "x" ? "" : v);
-      const totalSeats = seatValues.length;
-
-      const oldStates = seatStates.slice();
-      seatStates = Array(totalSeats).fill(null);
-      for (let i = 0; i < totalSeats; i++) {
-        seatStates[i] = oldStates[i] === "X" ? "X" : null;
-      }
-
-      const seatLayout = document.getElementById("seatLayout");
-      const unplacedBox = document.getElementById("unplaced");
-      seatLayout.innerHTML = "";
-      unplacedBox.style.display = "none";
-      unplacedBox.innerHTML = "";
-
-      let columns = 2;
-      let rows = 3;
-      let sections = 3;
-
-      if (totalNumbers > 18) {
-        const perSection = Math.ceil(seatValues.length / sections);
-        rows = Math.ceil(perSection / columns);
-      }
-
-      for (let s = 0; s < sections; s++) {
-        const section = document.createElement("div");
-        section.className = "section";
-        section.style.gridTemplateColumns = `repeat(${columns}, 60px)`;
-        section.style.gridTemplateRows = `repeat(${rows}, 60px)`;
-
-        for (let i = 0; i < columns * rows; i++) {
-          const globalIndex = s * columns * rows + i;
-          const val = seatValues[globalIndex] ?? "";
-          section.appendChild(createCell(globalIndex, val));
+        const oldStates = seatStates.slice();
+        seatStates = Array(18).fill(null);
+        for (let i = 0; i < 18; i++) {
+          seatStates[i] = oldStates[i] === "X" ? "X" : null;
         }
-        seatLayout.appendChild(section);
-      }
 
-      const used = columns * rows * sections;
-      const unplaced = seatValues.slice(used).filter(v => v !== "");
-      if (unplaced.length > 0) {
-        unplacedBox.style.display = "block";
-        unplacedBox.textContent = "배치되지 못한 번호: " + unplaced.join(", ");
+        for (let s = 0; s < 3; s++) {
+          const section = document.createElement("div");
+          section.className = "section";
+          section.style.gridTemplateColumns = "repeat(2, 60px)";
+          section.style.gridTemplateRows = "repeat(3, 60px)";
+
+          for (let i = 0; i < 6; i++) {
+            const globalIndex = s * 6 + i;
+            const val = seatValues[globalIndex];
+            section.appendChild(createCell(globalIndex, val));
+          }
+          seatLayout.appendChild(section);
+        }
+
+      } else {
+        // 일반 배치
+        shuffle(allNumbers);
+        const seatValues = allNumbers.map(v => v === "x" ? "" : v);
+        const totalSeats = seatValues.length;
+
+        const oldStates = seatStates.slice();
+        seatStates = Array(totalSeats).fill(null);
+        for (let i = 0; i < totalSeats; i++) {
+          seatStates[i] = oldStates[i] === "X" ? "X" : null;
+        }
+
+        const columns = 2;
+        const sections = 3;
+        const perSection = Math.ceil(seatValues.length / sections);
+        const rows = Math.ceil(perSection / columns);
+
+        for (let s = 0; s < sections; s++) {
+          const section = document.createElement("div");
+          section.className = "section";
+          section.style.gridTemplateColumns = `repeat(${columns}, 60px)`;
+          section.style.gridTemplateRows = `repeat(${rows}, 60px)`;
+
+          for (let i = 0; i < columns * rows; i++) {
+            const globalIndex = s * columns * rows + i;
+            const val = seatValues[globalIndex] ?? "";
+            section.appendChild(createCell(globalIndex, val));
+          }
+          seatLayout.appendChild(section);
+        }
+
+        const used = columns * rows * sections;
+        const unplaced = seatValues.slice(used).filter(v => v !== "");
+        if (unplaced.length > 0) {
+          unplacedBox.style.display = "block";
+          unplacedBox.textContent = "배치되지 못한 번호: " + unplaced.join(", ");
+        }
       }
     }
   </script>
