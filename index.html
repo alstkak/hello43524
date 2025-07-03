@@ -120,12 +120,7 @@
         return;
       }
 
-      const seatLayout = document.getElementById("seatLayout");
-      const unplacedBox = document.getElementById("unplaced");
-      seatLayout.innerHTML = "";
-      unplacedBox.style.display = "none";
-      unplacedBox.innerHTML = "";
-
+      const totalNumbers = end - start + 1;
       let allNumbers = [];
       for (let i = start; i <= end; i++) {
         if (exclude.includes(i)) {
@@ -135,18 +130,38 @@
         }
       }
 
-      shuffle(allNumbers);
+      if (totalNumbers <= 18) {
+        while (allNumbers.length < 18) {
+          allNumbers.push("x");
+        }
+        shuffle(allNumbers);
+      } else {
+        shuffle(allNumbers);
+      }
 
-      const seatValues = allNumbers.map(v => v === "x" ? "" : v);  // 'x'는 나중에 빈칸 처리
-
+      const seatValues = allNumbers.map(v => v === "x" ? "" : v);
       const totalSeats = seatValues.length;
 
+      const oldStates = seatStates.slice();
       seatStates = Array(totalSeats).fill(null);
+      for (let i = 0; i < totalSeats; i++) {
+        seatStates[i] = oldStates[i] === "X" ? "X" : null;
+      }
 
-      // 칸 배치 계산
+      const seatLayout = document.getElementById("seatLayout");
+      const unplacedBox = document.getElementById("unplaced");
+      seatLayout.innerHTML = "";
+      unplacedBox.style.display = "none";
+      unplacedBox.innerHTML = "";
+
       let columns = 2;
+      let rows = 3;
       let sections = 3;
-      let rows = Math.ceil(totalSeats / (columns * sections));
+
+      if (totalNumbers > 18) {
+        const perSection = Math.ceil(seatValues.length / sections);
+        rows = Math.ceil(perSection / columns);
+      }
 
       for (let s = 0; s < sections; s++) {
         const section = document.createElement("div");
@@ -159,7 +174,6 @@
           const val = seatValues[globalIndex] ?? "";
           section.appendChild(createCell(globalIndex, val));
         }
-
         seatLayout.appendChild(section);
       }
 
